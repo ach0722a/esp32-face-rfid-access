@@ -1,0 +1,15 @@
+# 機密設定
+secrets.h
+
+# 執行時產生的資料（含人臉照片與刷卡紀錄，不可公開）
+server/captures/
+server/users/
+server/database.db
+captures/
+users/
+*.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
