@@ -41,7 +41,7 @@ void setup() {
   Serial.setDebugOutput(true);
   Serial.println();
 
-  // --- 相機參數配置 (依照範例的嚴謹寫法) ---
+  // --- 相機參數配置 ---
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -82,7 +82,7 @@ void setup() {
   // --- 初始化相機 ---
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
-    Serial.printf("❌ 相機初始化失敗，錯誤碼: 0x%x", err);
+    Serial.printf("[ERR] 相機初始化失敗，錯誤碼: 0x%x", err);
     return;
   }
 
@@ -106,7 +106,7 @@ void setup() {
     Serial.print(".");
   }
   Serial.println("");
-  Serial.println("✅ WiFi 已連線");
+  Serial.println("[OK] WiFi 已連線");
 
   // --- 啟動伺服器 ---
   startCameraServer();
@@ -136,7 +136,7 @@ esp_err_t capture_handler(httpd_req_t *req) {
     // 1. 取得影像
     fb = esp_camera_fb_get();
     if (!fb) {
-        Serial.println("❌ 拍照失敗 (Camera capture failed)");
+        Serial.println("[ERR] 拍照失敗 (Camera capture failed)");
         httpd_resp_send_500(req);
         return ESP_FAIL;
     }
@@ -154,7 +154,7 @@ esp_err_t capture_handler(httpd_req_t *req) {
     size_t len = fb->len;
     esp_camera_fb_return(fb);
 
-    Serial.printf("📸 照片已傳送 (大小: %u bytes)\n", len);
+    Serial.printf("照片已傳送 (大小: %u bytes)\n", len);
     return res;
 }
 
@@ -177,8 +177,8 @@ void startCameraServer() {
     if (httpd_start(&camera_httpd, &config) == ESP_OK) {
         // 註冊 /capture 路徑
         httpd_register_uri_handler(camera_httpd, &capture_uri);
-        Serial.println("✅ 伺服器啟動成功");
+        Serial.println("[OK] 伺服器啟動成功");
     } else {
-        Serial.println("❌ 伺服器啟動失敗");
+        Serial.println("[ERR] 伺服器啟動失敗");
     }
 }

@@ -61,12 +61,12 @@ void setup() {
   leds[0] = CRGB::Black; // 連線成功後關燈
   FastLED.show();
 
-  Serial.println("\n✅ WiFi 已連線");
+  Serial.println("\n[OK] WiFi 已連線");
   Serial.print("ESP32 IP 位址: ");
   Serial.println(WiFi.localIP());
 
   // --- 3. 初始化 RFID ---
-  // 注意：如果你的板子還是報錯 SPI，請確認開發板選 ESP32S3 Dev Module
+  // 開發板需選 ESP32S3 Dev Module，SPI 腳位才會對應正確
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN); 
   rfid.PCD_Init(); 
 
@@ -74,11 +74,11 @@ void setup() {
   byte v = rfid.PCD_ReadRegister(rfid.VersionReg);
   Serial.print(F("RC522 晶片版本 (HEX): ")); Serial.println(v, HEX);
   if (v == 0x00 || v == 0xFF) {
-      Serial.println(F("❌ 錯誤：讀不到 RC522，請檢查接線！"));
+      Serial.println(F("[ERR] 錯誤：讀不到 RC522，請檢查接線！"));
       leds[0] = CRGB::Red; 
       FastLED.show();
   } else {
-      Serial.println(F("✅ RC522 就緒，請刷卡..."));
+      Serial.println(F("[OK] RC522 就緒，請刷卡..."));
   }
   Serial.println(F("-----------------------------"));
 }
@@ -102,7 +102,7 @@ void loop() {
   Serial.print("讀取 UID: ");
   Serial.println(uidString);
 
-  // --- 關鍵修改：呼叫處理函式 ---
+  // --- 送出卡號並等待辨識結果 ---
   processVerification(uidString);
 
   // 停止卡片通訊
@@ -124,7 +124,7 @@ void processVerification(String data) {
   
   // 1. 嘗試連線 Python Server
   if (!client.connect(host, port)) {
-    Serial.println("❌ 連線失敗！找不到 Python Server");
+    Serial.println("[ERR] 連線失敗！找不到 Python Server");
     // 連不上網路 -> 紅燈閃爍
     for(int i=0; i<3; i++){
       leds[0] = CRGB::Red; FastLED.show(); delay(200);
@@ -135,9 +135,9 @@ void processVerification(String data) {
 
   // 2. 傳送 UID
   client.print(data);
-  Serial.println("📤 UID 已傳送，等待 Python 辨識...");
+  Serial.println("UID 已傳送，等待 Python 辨識...");
 
-  // ★★★ 狀態：處理中 -> 亮黃色 ★★★
+  // 狀態：處理中，亮黃燈
   leds[0] = CRGB::Yellow;
   FastLED.show();
 
@@ -145,7 +145,7 @@ void processVerification(String data) {
   unsigned long timeout = millis();
   while (client.available() == 0) {
     if (millis() - timeout > 10000) { 
-      Serial.println("❌ 等待逾時 (Python 沒反應)");
+      Serial.println("[ERR] 等待逾時 (Python 沒反應)");
       client.stop();
       // 超時 -> 亮紅色
       leds[0] = CRGB::Red;
@@ -159,16 +159,16 @@ void processVerification(String data) {
   String response = client.readString(); // 讀取所有回傳字串
   response.trim(); // 去除前後空白
   
-  Serial.print("📩 收到回應: ");
+  Serial.print("收到回應: ");
   Serial.println(response);
 
   // 5. 判斷燈號
   if (response == "PASS") {
-    Serial.println("✅ 驗證通過！(亮綠燈)");
+    Serial.println("[OK] 驗證通過！(亮綠燈)");
     leds[0] = CRGB::Green;
   } else {
     // 包含 FAIL, ERROR 或其他
-    Serial.println("⛔ 驗證失敗/錯誤！(亮紅燈)");
+    Serial.println("[ERR] 驗證失敗/錯誤！(亮紅燈)");
     leds[0] = CRGB::Red;
   }
   FastLED.show();
